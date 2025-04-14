@@ -19,16 +19,18 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2){
+    if (argc < 3){
         std::cout << "Error! Must enter 2 arguments" << std::endl;
-        std::cout << "1: Dataset Tag (from MadGraph)" << std::endl;
-        std::cout << "2: Number of Runs (from MadGraph)" << std::endl;
+        std::cout << "1: Input Dataset Tag (from MadGraph)" << std::endl;
+        std::cout << "2: Output Dataset Tag" << std::endl;
+        std::cout << "3: Number of Runs" << std::endl;
         return 1;
     }
-    char *dataset_tag = argv[1];
-    char *run_num = argv[2];
+    char *in_dataset_tag = argv[1];
+    char *out_dataset_tag = argv[2];
+    char *run_num = argv[3];
 
-    std::string inputFile = std::string("../../madgraph/pp_tt_semi_full_")+std::string(dataset_tag)+std::string("/Events/run_01_")+std::string(run_num)+std::string("/unweighted_events.lhe.gz");
+    std::string inputFile = std::string("../../madgraph/")+std::string(in_dataset_tag)+std::string("/Events/run_01_")+std::string(run_num)+std::string("/unweighted_events.lhe.gz");
 
     // Initialize Pythia Settings
     Pythia8::Pythia pythia;
@@ -41,7 +43,7 @@ int main(int argc, char *argv[])
     if (!pythia.init()) return 1;
 
     // Initialize output ROOT file, TTree, and Branches
-    TFile *output = new TFile(TString("../WS_")+TString(dataset_tag)+TString("/dataset_")+TString(dataset_tag)+TString("_")+TString(run_num)+TString(".root"),"recreate");
+    TFile *output = new TFile(TString("../WS_")+TString(out_dataset_tag)+TString("/data/dataset_")+TString(out_dataset_tag)+TString("_")+TString(run_num)+TString(".root"),"recreate");
     TTree *FastJet = new TTree("fastjet", "fastjet");
 
     std::vector<float> jet_pt, jet_eta, jet_phi, jet_m;

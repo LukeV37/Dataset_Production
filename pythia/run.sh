@@ -1,19 +1,22 @@
 #!/bin/bash
 
-if [ -z "$3" ]; then
-    echo "Must enter 3 agruments"
-    echo -e "\t1: Dataset Tag (from MadGraph)"
-    echo -e "\t2: Number of runs (from MadGraph)"
-    echo -e "\t3: Max num cpu cores"
+if [ -z "$4" ]; then
+    echo "Must enter 4 agruments"
+    echo -e "\t1: Input Dataset Tag (from MadGraph)"
+    echo -e "\t2: Output Dataset Tag"
+    echo -e "\t3: Number of runs"
+    echo -e "\t4: Max num cpu cores"
     exit 1
 fi
 
-tag=$1
-runs=$2
-max_cpu_cores=$3
+in_tag=$1
+out_tag=$2
+runs=$3
+max_cpu_cores=$4
 
-mkdir "WS_${tag}"
-mkdir "WS_${tag}/logs"
+mkdir -p "WS_${out_tag}"
+mkdir -p "WS_${out_tag}/logs"
+mkdir -p "WS_${out_tag}/data"
 
 cd src
 make generate_dataset
@@ -25,7 +28,7 @@ batch=1
 for (( i=0 ; i<$runs ; i++ ));
 do
     echo -e "\t\tSubmitting job to shower run $i"
-    ./run_dataset $tag $i > "../WS_${tag}/logs/dataset_${tag}_${i}.log" 2>&1 &
+    ./run_dataset $in_tag $out_tag $i > "../WS_${out_tag}/logs/${out_tag}_${i}.log" 2>&1 &
     job=$((job+1))
     if [ $job == $max_cpu_cores ]; then
         echo -e "\tStopping jobs submissions! Please wait for batch $batch to finish..."
