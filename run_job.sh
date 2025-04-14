@@ -100,17 +100,3 @@ if [ "$bypass_batch" = false ]; then
   echo -e "\tBatching Done!"
   echo -e "\tTime (sec): $runtime"
 fi
-
-# Run training script
-if [ "$bypass_train" = false ]; then
-  echo "Please be patient for Training..."
-  start=`date +%s`
-  cd model
-  mkdir -p $dir_training
-  python -u Jet_Attention_Model_MSE.py $tag $epochs $step $dir_datasets $dir_training $analysis_type | tee "${dir_training}/training.log"
-  cd $WORKING_DIR
-  end=`date +%s`
-  runtime=$((end-start))
-  echo -e "\tTraining Done!"
-  echo -e "\tTime (sec): $runtime"
-fi

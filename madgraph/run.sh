@@ -1,24 +1,20 @@
 #!/bin/bash
 
-if [ -z "$5" ]; then
-    echo "Must enter 5 agruments"
-    echo -e "\t1: Dataset Tag e.g. unpolarized_10k"
-    echo -e "\t2: Polarization: L, R, U"
-    echo -e "\t3: Number of Runs"
-    echo -e "\t4: Number of Events per Run"
-    echo -e "\t5: Max num cpu cores"
+######################
+### Initialization ###
+######################
+if [ -z "$4" ]; then
+    echo "Must enter 4 agruments"
+    echo -e "\t1: Dataset Tag e.g. MyDataset"
+    echo -e "\t2: Physics Process e.g. HHbbbb"
+    echo -e "\t3: Number of Runs e.g. 10"
+    echo -e "\t4: Number of Events per Run e.g. 10k,1M"
     exit 1
 fi
-
 dataset_tag=$1
-polarization=$2
+process=$2
 num_runs=$3
 num_events_per_run=$4
-max_cpu_cores=$5
-
-# Error handling before launching event generation
-set -e
-python -c "import ROOT; import uproot; import awkward"
 
 ###########################
 ### MadGraph Generation ###
@@ -63,52 +59,6 @@ rm -f py.py
 rm -f MG5_debug
 rm -f ME5_debug
 rm *.tmp
-
-#######################
-### Post Processing ###
-#######################
-
-function calc_labels {
-    tag=$1
-    run=$2
-
-    # Extract LHE file with gzip
-    #echo -e "\tDecompressing lhe file..."
-    gzip -dk "./pp_tt_semi_full_${tag}/Events/run_01_$run/unweighted_events.lhe.gz"
-
-    # Find line with version number and delete the proceeding warning
-    # This is needed since I am using git tag instead of production version
-    line_num=$(awk '/VERSION 3.5.5/ {print NR}' "pp_tt_semi_full_${tag}/Events/run_01_$run/unweighted_events.lhe")
-    start_line=$((line_num+1))
-    end_line=$((line_num+4))
-    sed -i "${start_line},${end_line}d" "pp_tt_semi_full_${tag}/Events/run_01_$run/unweighted_events.lhe"
-
-    # Now that warning message is removed, use LHEReader.py to convert LHE file to root file
-    #echo -e "\tConverting lhe file to root format..."
-    python include/LHEReader.py --input "pp_tt_semi_full_${tag}/Events/run_01_$run/unweighted_events.lhe" --output "pp_tt_semi_full_${tag}/hard_process_${tag}_$i.root"
-
-    # Calculate labels
-    python include/TLorentz_Labels.py $tag $run
-
-    # Clean workspace (uncompressed version no longer needed)
-    rm -f "./pp_tt_semi_full_${tag}/Events/run_01_$run/unweighted_events.lhe"
-}
-
-job=0
-batch=1
-for (( i=0 ; i<$num_runs ; i++ ));
-do
-    echo -e "\t\tSubmitting job to calc labels: $i"
-    calc_labels $dataset_tag $i &
-    job=$((job+1))
-    if [ $job == $max_cpu_cores ]; then
-        echo -e "\tStopping jobs submissions! Please wait for batch $batch to finish..."
-        wait
-        job=0
-        batch=$((batch+1))
-    fi
-done
-wait
 
 echo
 echo -e "\tMadGraph Generation Done!"
