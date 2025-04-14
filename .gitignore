@@ -1,10 +1,9 @@
-madgraph/pp_tt_semi_full*
 *.root
 *.hepmc
 *.lhe
+__pycache__
 .ipynb_checkpoints
 *MG5_aMC_v3*
 *.pkl
 *.png
 *.log
-model/WS*
