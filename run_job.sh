@@ -40,17 +40,17 @@ if [ "$bypass_preprocessing" = false ]; then
   echo "Please be patient for Preprocessing..."
   start=`date +%s`
   cd preprocessing
-  dir_preprocessing="WS_${preprocessing_out_tag}/logs"
-  dir_datasets="WS_${preprocessing_out_tag}/data"
+  dir_preprocessing="WS_${preproc_out_tag}/logs"
+  dir_datasets="WS_${preproc_out_tag}/data"
   mkdir -p "${dir_datasets}"
 
   job=0
   batch=1
-  for (( i=0 ; i<$num_runs_preprocessing; i++ ));
+  for (( i=0 ; i<$num_runs_preproc; i++ ));
   do
     echo -e "\t\tSubmitting job to preprocess run $i"
     mkdir -p "${dir_preprocessing}/run_$i"
-    python -u preprocessing.py "../pythia/WS_${preprocessing_in_tag}/data/dataset_showered_run_${i}.root" "${dir_datasets}/dataset_preprocessed_run_$i.pkl" "$dir_preprocessing/run_$i" > "${dir_preprocessing}/run_$i/preprocessing.log" &
+    python -u preprocessing.py "../pythia/WS_${preproc_in_tag}/data/dataset_showered_run_${i}.root" "${dir_datasets}/dataset_preprocessed_run_$i.pkl" "$dir_preprocessing/run_$i" > "${dir_preprocessing}/run_$i/preprocessing.log" &
     job=$((job+1))
     if [ $job == $max_cpu_cores ]; then
       echo -e "\tStopping jobs submissions! Please wait for batch $batch to finish..."
