@@ -17,22 +17,18 @@ source setup.sh
 if [ "$bypass_madgraph" = false ]; then
   start=`date +%s`
   cd madgraph
-  ./run.sh $tag $process $num_runs $num_events_per_run $max_cpu_cores
+  ./run.sh $madgraph_out_tag $process $num_runs $num_events_per_run $max_cpu_cores
   cd $WORKING_DIR
   end=`date +%s`
   runtime=$((end-start))
   echo -e "\tTime (sec): $runtime"
 fi
 
-# Calculate number of batches based on max number of cpu available
-# Use python to perform calculations
-num_batches=$(python -c "print(int($num_runs/float($max_cpu_cores))) if $num_runs%$max_cpu_cores==0 else print(int($num_runs/float($max_cpu_cores))+1)")
-
 # Run Pythia Showering
 if [ "$bypass_pythia" = false ]; then
   start=`date +%s`
   cd pythia
-  ./run.sh $tag $num_runs $max_cpu_cores
+  ./run.sh $pythia_in_tag $pythia_out_tag $num_runs $max_cpu_cores
   cd $WORKING_DIR
   end=`date +%s`
   runtime=$((end-start))
