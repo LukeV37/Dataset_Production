@@ -1,7 +1,5 @@
-torch
 uproot
 awkward
 numpy
-scikit-learn
+torch
 matplotlib
-vector
