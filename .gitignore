@@ -1,6 +1,7 @@
 *.root
 *.hepmc
 *.lhe
+*WS_*
 __pycache__
 .ipynb_checkpoints
 *MG5_aMC_v3*
