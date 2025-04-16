@@ -1,96 +1,132 @@
 #include <iostream>
 #include <vector>
 
+#include "TFile.h"
+#include "TTree.h"
+#include "TRandom3.h"
+#include "TString.h"
+#include <TRandom.h>
+
 #include "Pythia8/Pythia.h"
-#include "Pythia8Plugins/HepMC2.h"
 
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/ClusterSequence.hh"
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TRandom3.h"
-#include <TRandom.h>
-#include "TString.h"
-
 #include "include/estimate_ip.h"
 #include "include/trace_origin_top.h"
-#include "include/traverse_history.h"
+#include "include/trace_origin_higgs.h"
 
+// Main pythia loop
 int main(int argc, char *argv[])
 {
-    if (argc < 3){
-        std::cout << "Error! Must enter 2 arguments" << std::endl;
+    // Using a while loop to iterate through arguments
+    char *settings[] = { " ", "In Dataset Tag: ", "Out Dataset Tag: ", "Run Number: ", "Average Pileup (mu): ", "Min pT of Jet: " };
+    int i = 0;
+    while (i < argc) {
+        std::cout << settings[i] << argv[i]
+             << std::endl;
+        i++;
+
+    }
+    if (argc < 5){
+        std::cout << "Error! Must enter 5 arguments" << std::endl;
         std::cout << "1: Input Dataset Tag (from MadGraph)" << std::endl;
         std::cout << "2: Output Dataset Tag" << std::endl;
-        std::cout << "3: Number of Runs" << std::endl;
+        std::cout << "3: Run Number" << std::endl;
+        std::cout << "4: Amount of Pileup, mu" << std::endl;
+        std::cout << "5: Min Jet pT (GeV)" << std::endl;
         return 1;
     }
+
     char *in_dataset_tag = argv[1];
     char *out_dataset_tag = argv[2];
     char *run_num = argv[3];
+    int mu = atoi(argv[4]);
+    double pTmin_jet = atof(argv[5]);
+    
+    std::string inputFile = std::string("../../madgraph/WS_")+std::string(in_dataset_tag)+std::string("/Events/run_01_")+std::string(run_num)+std::string("/unweighted_events.lhe.gz");
+    TString outputFile = TString("../WS_")+TString(out_dataset_tag)+TString("/data/dataset_showered_run_")+TString(run_num)+TString(".root");
 
-    std::string inputFile = std::string("../../madgraph/")+std::string(in_dataset_tag)+std::string("/Events/run_01_")+std::string(run_num)+std::string("/unweighted_events.lhe.gz");
+    // Initialiaze output ROOT file
+    TFile *output = new TFile(outputFile, "recreate");
+    
+    // Define local vars to be linked to TTree branches
+    int id, status, ID, label;
+    double pT, eta, phi, e, q, xProd, yProd, zProd, tProd, xDec, yDec, zDec, tDec;
 
-    // Initialize Pythia Settings
-    Pythia8::Pythia pythia;
-    pythia.readString("Beams:frameType = 4");
-    pythia.readString("Beams:LHEF = "+inputFile);
-    //Pythia8::Pythia8ToHepMC toHepMC("../shower.hepmc");
-    pythia.readString("Next:numberCount = 1000");
-
-    // If Pythia fails to initialize, exit with error.
-    if (!pythia.init()) return 1;
-
-    // Initialize output ROOT file, TTree, and Branches
-    TFile *output = new TFile(TString("../WS_")+TString(out_dataset_tag)+TString("/data/dataset_")+TString(out_dataset_tag)+TString("_")+TString(run_num)+TString(".root"),"recreate");
+    // Define tree with jets clustered using fast jet
     TTree *FastJet = new TTree("fastjet", "fastjet");
-
     std::vector<float> jet_pt, jet_eta, jet_phi, jet_m;
     FastJet->Branch("jet_pt", &jet_pt);
     FastJet->Branch("jet_eta", &jet_eta);
     FastJet->Branch("jet_phi", &jet_phi);
     FastJet->Branch("jet_m", &jet_m);
 
-    std::vector<std::vector<float>> jet_trk_pT, jet_trk_eta, jet_trk_phi, jet_trk_q, jet_trk_d0, jet_trk_z0;
-    std::vector<std::vector<int>> jet_trk_origin, jet_trk_pid, jet_trk_fromDown, jet_trk_fromUp, jet_trk_fromBottom;
-    FastJet->Branch("jet_trk_pt", &jet_trk_pT);
-    FastJet->Branch("jet_trk_eta", &jet_trk_eta);
-    FastJet->Branch("jet_trk_phi", &jet_trk_phi);
-    FastJet->Branch("jet_trk_q", &jet_trk_q);
-    FastJet->Branch("jet_trk_d0", &jet_trk_d0);
-    FastJet->Branch("jet_trk_z0", &jet_trk_z0);
-    FastJet->Branch("jet_trk_pid", &jet_trk_pid);
-    FastJet->Branch("jet_trk_origin", &jet_trk_origin);
-    FastJet->Branch("jet_trk_fromDown", &jet_trk_fromDown);
-    FastJet->Branch("jet_trk_fromUp", &jet_trk_fromUp);
-    FastJet->Branch("jet_trk_fromBottom", &jet_trk_fromBottom);
+    std::vector<std::vector<float>> trk_jet_pT, trk_jet_eta, trk_jet_phi, trk_jet_e;
+    std::vector<std::vector<float>> trk_jet_q, trk_jet_d0, trk_jet_z0;
+    std::vector<std::vector<int>> trk_jet_pid, trk_jet_label, trk_jet_origin, trk_jet_bcflag;
+    FastJet->Branch("trk_jet_pT", &trk_jet_pT);
+    FastJet->Branch("trk_jet_eta", &trk_jet_eta);
+    FastJet->Branch("trk_jet_phi", &trk_jet_phi);
+    FastJet->Branch("trk_jet_e", &trk_jet_e);
+    FastJet->Branch("trk_jet_q", &trk_jet_q);
+    FastJet->Branch("trk_jet_d0", &trk_jet_d0);
+    FastJet->Branch("trk_jet_z0", &trk_jet_z0);
+    FastJet->Branch("trk_jet_pid", &trk_jet_pid);
+    FastJet->Branch("trk_jet_label", &trk_jet_label);
+    FastJet->Branch("trk_jet_origin", &trk_jet_origin);
+    FastJet->Branch("trk_jet_bcflag", &trk_jet_bcflag);
 
-    std::vector<float> trk_pT, trk_eta, trk_phi, trk_q, trk_d0, trk_z0;
-    std::vector<int> trk_origin, trk_pid, trk_fromDown, trk_fromUp, trk_fromBottom;
-    FastJet->Branch("trk_pt", &trk_pT);
+    std::vector<float> trk_pT, trk_eta, trk_phi, trk_e;
+    std::vector<float> trk_q, trk_d0, trk_z0;
+    std::vector<int> trk_pid, trk_label, trk_origin, trk_bcflag;
+    FastJet->Branch("trk_pT", &trk_pT);
     FastJet->Branch("trk_eta", &trk_eta);
     FastJet->Branch("trk_phi", &trk_phi);
+    FastJet->Branch("trk_e", &trk_e);
     FastJet->Branch("trk_q", &trk_q);
     FastJet->Branch("trk_d0", &trk_d0);
     FastJet->Branch("trk_z0", &trk_z0);
     FastJet->Branch("trk_pid", &trk_pid);
+    FastJet->Branch("trk_label", &trk_label);
     FastJet->Branch("trk_origin", &trk_origin);
-    FastJet->Branch("trk_fromDown", &trk_fromDown);
-    FastJet->Branch("trk_fromUp", &trk_fromUp);
-    FastJet->Branch("trk_fromBottom", &trk_fromBottom);
+    FastJet->Branch("trk_bcflag", &trk_bcflag);
 
-    // Configure Jet parameters
-    float pTmin_jet = 250; // GeV
+    std::vector<int> jet_ntracks;
+    std::vector<int> jet_track_index;
+    FastJet->Branch("jet_ntracks", &jet_ntracks);
+    FastJet->Branch("jet_track_index", &jet_track_index);
+
+    // Configure HS Process
+    Pythia8::Pythia pythia;
+
+    // Initialize Les Houches Event File run. List initialization information.
+    pythia.readString("Beams:frameType = 4");
+    pythia.readString(std::string("Beams:LHEF = ")+inputFile);
+
+    pythia.readString("Next:numberCount = 100");
+
+    // Force H->bb decay
+    pythia.readString("25:onMode = off");
+    pythia.readString("25:onIfAny = 5");
+
+    // Set Vertex Spreading
+    pythia.readString("Beams:allowVertexSpread = on");
+    pythia.readString("Beams:sigmaVertexX = 0.3");
+    pythia.readString("Beams:sigmaVertexY = 0.3");
+    pythia.readString("Beams:sigmaVertexZ = 50.");
+
+    // If Pythia fails to initialize, exit with error.
+    if (!pythia.init()) return 1;
+
+    // Configure PU Process
+    Pythia8::Pythia pythiaPU;
+    pythiaPU.readFile("./config/pileup.cmnd");
+    if (mu > 0) pythiaPU.init();
+
+    // Configure antikt_algorithm
     std::map<TString, fastjet::JetDefinition> jetDefs;
-    jetDefs["anti-kt"] = fastjet::JetDefinition(
-      fastjet::antikt_algorithm, 0.4, fastjet::E_scheme, fastjet::Best);
-    jetDefs["kt"] = fastjet::JetDefinition(
-      fastjet::kt_algorithm, 0.4, fastjet::E_scheme, fastjet::Best);
-    jetDefs["CA"] = fastjet::JetDefinition(
-      fastjet::cambridge_algorithm, 0.4, fastjet::E_scheme, fastjet::Best);
-    jetDefs["fatjet"] = fastjet::JetDefinition(
-      fastjet::cambridge_algorithm, 1.0, fastjet::E_scheme, fastjet::Best);
+    jetDefs["Anti-#it{k_{t}} jets, #it{R} = 0.4"] = fastjet::JetDefinition(fastjet::antikt_algorithm, 0.4, fastjet::E_scheme, fastjet::Best);
 
     // Allow for possibility of a few faulty events.
     int nAbort = 10;
@@ -107,122 +143,217 @@ int main(int argc, char *argv[])
           continue;
         }
 
-        // Write out event to a hepmc file
-        //toHepMC.writeNextEvent( pythia );
+        ID = 0;
+        std::vector<float> event_trk_pT;
+        std::vector<float> event_trk_eta;
+        std::vector<float> event_trk_phi;
+        std::vector<float> event_trk_e;
+        std::vector<float> event_trk_q;
+        std::vector<float> event_trk_d0;
+        std::vector<float> event_trk_z0;
+        std::vector<int> event_trk_pid;
+        std::vector<int> event_trk_label;
 
-        // Use depth-first-search to find down daughters
-        std::vector<int> fromDown;
-        std::vector<int> fromUp;
-        std::vector<int> fromBottom;
-        int top_idx = find_top_from_event(pythia.event, 6);
-        int down_idx = find_down_from_top(pythia.event, top_idx);
-        int up_idx = find_up_from_top(pythia.event, top_idx);
-        int bottom_idx = find_b_from_top(pythia.event, top_idx);
-        fromDown = find_daughters(pythia.event, down_idx);
-        fromUp = find_daughters(pythia.event, up_idx);
-        fromBottom = find_daughters(pythia.event, bottom_idx);
+        int entries = pythia.event.size();
+        std::vector<Pythia8::Particle> ptcls_hs, ptcls_pu;
+        std::vector<fastjet::PseudoJet> stbl_ptcls;
 
-        // Initialize vector for fastjet clustering and particle index
-        std::vector<fastjet::PseudoJet> fastjet_particles;
-        int particle_num=0;
-
-        // prepare for filling
-        jet_pt.clear(); jet_eta.clear(); jet_phi.clear(); jet_m.clear();
-        jet_trk_pT.clear(); jet_trk_eta.clear(); jet_trk_phi.clear(); jet_trk_q.clear(); jet_trk_d0.clear(); jet_trk_z0.clear(); jet_trk_origin.clear(); jet_trk_pid.clear(); jet_trk_fromDown.clear(); jet_trk_fromUp.clear(); jet_trk_fromBottom.clear();
-        trk_pT.clear(); trk_eta.clear(); trk_phi.clear(); trk_q.clear(); trk_d0.clear(); trk_z0.clear(); trk_origin.clear(); trk_pid.clear(); trk_fromDown.clear(); trk_fromUp.clear(); trk_fromBottom.clear();
-
-
-        // Loop through particles in the event
+        // Add in hard scatter particles!
         for(int j=0;j<pythia.event.size();j++){
             auto &p = pythia.event[j];
-
-            //std::cout << j << "\t" << p.id() << "\t" << p.status() << "\t" << p.mother1() << "\t" << p.mother2() << "\t" << p.daughter1() << "\t" << p.daughter2() << std::endl;
-
-            particle_num++; // Keep track of particle num
+            id = p.id();
+            status = p.status();
             
-            // Do not consider intermediate particles for clustering
+            pT = p.pT();
+            eta = p.eta();
+            phi = p.phi();
+            e = p.e();
+            q = p.charge();
+            xProd = p.xProd();
+            yProd = p.yProd();
+            zProd = p.zProd();
+            tProd = p.tProd();
+            xDec = p.xDec();
+            yDec = p.yDec();
+            zDec = p.zDec();
+            tDec = p.tDec();
+
+            label = -1; // HS Process
+
+            double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
+
+            ID++;
+            event_trk_pT.push_back(pT);
+            event_trk_eta.push_back(eta);
+            event_trk_phi.push_back(phi);
+            event_trk_e.push_back(e);
+            event_trk_q.push_back(q);
+            event_trk_d0.push_back(d0);
+            event_trk_z0.push_back(z0);
+            event_trk_pid.push_back(id);
+            event_trk_label.push_back(label);
+
             if (not p.isFinal()) continue;
-            // Do not consider neutrinos in clustering
-            if (std::abs(p.id())==12 || std::abs(p.id())==14 || std::abs(p.id())==16) continue;
-
-            // Convert particles to PseduoJet object, set the user idx, and append to the list of fastjet particles
-            fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
-            fj.set_user_index(particle_num-1); // Subtract 1 to become 0 based
-            fastjet_particles.push_back(fj);
-
-            // Fill trk vector with all fastjet candidates
-            // Skip soft tracks; Units GeV
-            if (p.pT() < 1.0) continue;
-
-            trk_pT.push_back(p.pT());
-            trk_eta.push_back(p.eta());
-            trk_phi.push_back(p.phi());
-            trk_q.push_back(p.charge());
-            double d0,z0; find_ip(p.pT(),p.eta(),p.phi(),p.xProd(),p.yProd(),p.zProd(),d0,z0);
-            trk_d0.push_back(d0);
-            trk_z0.push_back(z0);
-            int bcflag = 0;
-            int origin = trace_origin_top(pythia.event,j,bcflag);
-            trk_origin.push_back(origin);
-            trk_pid.push_back(p.id());
-            trk_fromDown.push_back(fromDown[j]);
-            trk_fromUp.push_back(fromUp[j]);
-            trk_fromBottom.push_back(fromBottom[j]);
+            // A.X.: skip neutrinos
+            if (abs(id)==12 || abs(id)==14 || abs(id)==16) continue;
+                fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
+                fj.set_user_index(ID);
+                stbl_ptcls.push_back(fj);
+                ptcls_hs.push_back(p);
         }
 
-        // Cluster particles using fastjet
-        fastjet::ClusterSequence clustSeq(fastjet_particles, jetDefs["fatjet"]);
-        auto jets = fastjet::sorted_by_pt( clustSeq.inclusive_jets(pTmin_jet) );
+        // Add in pileup particles!
+        int n_inel = 0;
+        if (mu>0) {
+            n_inel = gRandom->Poisson(mu);
+            // printf("Overlaying particles from %i pileup interactions!\n", n_inel);
+        }
+        for (int i_pu= 0; i_pu<n_inel; ++i_pu) {
+            if (!pythiaPU.next()) continue;
+            for (int j = 0; j < pythiaPU.event.size(); ++j) {
+                auto &p = pythiaPU.event[j];
+                id = p.id();
+                status = p.status();
 
-        // Loop through clustered jets
-        for (auto jet:jets) {
-            jet_pt.push_back(jet.pt()); jet_eta.push_back(jet.eta()); jet_phi.push_back(jet.phi()); jet_m.push_back(jet.m());
+                pT = p.pT();
+                eta = p.eta();
+                phi = p.phi();
+                e = p.e();
+                q = p.charge();
+                xProd = p.xProd();
+                yProd = p.yProd();
+                zProd = p.zProd();
+                tProd = p.tProd();
+                xDec = p.xDec();
+                yDec = p.yDec();
+                zDec = p.zDec();
+                tDec = p.tDec();
 
-            // Temporary vectors with jet constituent info
-            std::vector<float> jet_trk_pT_tmp, jet_trk_eta_tmp, jet_trk_phi_tmp, jet_trk_q_tmp, jet_trk_d0_tmp, jet_trk_z0_tmp;
-            std::vector<int> jet_trk_origin_tmp, jet_trk_pid_tmp, jet_trk_fromDown_tmp, jet_trk_fromUp_tmp, jet_trk_fromBottom_tmp;
+                label = i_pu; // PU Process
 
-            // Loop through jet constituents
-            for (auto trk:jet.constituents()) {
-                int idx = trk.user_index();
-                auto &p = pythia.event[idx];
-                // Skip soft tracks; Units GeV
-                if (p.pT() < 1.0) continue;
-                jet_trk_pT_tmp.push_back(p.pT());
-                jet_trk_eta_tmp.push_back(p.eta());
-                jet_trk_phi_tmp.push_back(p.phi());
-                jet_trk_q_tmp.push_back(p.charge());
-                double d0,z0; find_ip(p.pT(),p.eta(),p.phi(),p.xProd(),p.yProd(),p.zProd(),d0,z0);
-                jet_trk_d0_tmp.push_back(d0);
-                jet_trk_z0_tmp.push_back(z0);
+                double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
 
-                int bcflag = 0;
-                int origin = trace_origin_top(pythia.event,idx,bcflag);
-                jet_trk_origin_tmp.push_back(origin);
-                jet_trk_pid_tmp.push_back(p.id());
-                jet_trk_fromDown_tmp.push_back(fromDown[idx]);
-                jet_trk_fromUp_tmp.push_back(fromUp[idx]);
-                jet_trk_fromBottom_tmp.push_back(fromBottom[idx]);
+                ID++;
+                event_trk_pT.push_back(pT);
+                event_trk_eta.push_back(eta);
+                event_trk_phi.push_back(phi);
+                event_trk_e.push_back(e);
+                event_trk_q.push_back(q);
+                event_trk_d0.push_back(d0);
+                event_trk_z0.push_back(z0);
+                event_trk_pid.push_back(id);
+                event_trk_label.push_back(label);
 
-            } // End loop through trks
+                if (not p.isFinal()) continue;
+                // A.X.: skip neutrinos
+                if (abs(id)==12 || abs(id)==14 || abs(id)==16) continue;
+                        fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
+                        fj.set_user_index(ID);
+                        stbl_ptcls.push_back(fj);
+                        ptcls_pu.push_back(p);
+            }
+        }
 
-            jet_trk_pT.push_back(jet_trk_pT_tmp);
-            jet_trk_eta.push_back(jet_trk_eta_tmp);
-            jet_trk_phi.push_back(jet_trk_phi_tmp);
-            jet_trk_q.push_back(jet_trk_q_tmp);
-            jet_trk_d0.push_back(jet_trk_d0_tmp);
-            jet_trk_z0.push_back(jet_trk_z0_tmp);
-            jet_trk_origin.push_back(jet_trk_origin_tmp);
-            jet_trk_pid.push_back(jet_trk_pid_tmp);
-            jet_trk_fromDown.push_back(jet_trk_fromDown_tmp);
-            jet_trk_fromUp.push_back(jet_trk_fromUp_tmp);
-            jet_trk_fromBottom.push_back(jet_trk_fromBottom_tmp);
+        // prepare for filling
+        jet_pt.clear();
+        jet_eta.clear();
+        jet_phi.clear();
+        jet_m.clear();
 
-        } // End loop through jets
+        trk_jet_pT.clear();
+        trk_jet_eta.clear();
+        trk_jet_phi.clear();
+        trk_jet_e.clear();
+        trk_jet_q.clear();
+        trk_jet_d0.clear();
+        trk_jet_z0.clear();
+        trk_jet_pid.clear();
+        trk_jet_label.clear();
+        trk_jet_origin.clear();
+        trk_jet_bcflag.clear();
 
+        trk_pT.clear();
+        trk_eta.clear();
+        trk_phi.clear();
+        trk_e.clear();
+        trk_q.clear();
+        trk_d0.clear();
+        trk_z0.clear();
+        trk_pid.clear();
+        trk_label.clear();
+        trk_origin.clear();
+        trk_bcflag.clear();
+
+        jet_ntracks.clear();
+        jet_track_index.clear();
+        int track_index = 0;
+
+        // Cluster stable particles using anti-kt
+        for (auto jetDef:jetDefs) {
+            fastjet::ClusterSequence clustSeq(stbl_ptcls, jetDef.second);
+            auto jets = fastjet::sorted_by_pt( clustSeq.inclusive_jets(pTmin_jet) );
+            // For each jet:
+            for (auto jet:jets) {
+                jet_pt.push_back(jet.pt());
+                jet_eta.push_back(jet.eta());
+                jet_phi.push_back(jet.phi());
+                jet_m.push_back(jet.m());
+
+                std::vector<float> trk_pT_tmp, trk_eta_tmp, trk_phi_tmp, trk_e_tmp;
+                std::vector<float> trk_q_tmp, trk_d0_tmp, trk_z0_tmp;
+                std::vector<int> trk_pid_tmp, trk_label_tmp, trk_origin_tmp, trk_bcflag_tmp;
+
+                // For each particle:
+                jet_track_index.push_back(track_index);
+                int ntracks = 0;
+                for (auto trk:jet.constituents()) {
+                    int ix = trk.user_index()-1;
+                    trk_pT.push_back(event_trk_pT[ix]);
+                    trk_eta.push_back(event_trk_eta[ix]);
+                    trk_phi.push_back(event_trk_phi[ix]);
+                    trk_e.push_back(event_trk_e[ix]);
+                    trk_q.push_back(event_trk_q[ix]);
+                    trk_d0.push_back(event_trk_d0[ix]);
+                    trk_z0.push_back(event_trk_z0[ix]);
+                    trk_pid.push_back(event_trk_pid[ix]);
+                    trk_label.push_back(event_trk_label[ix]);
+                    int bcflag = 0;
+                    int origin = event_trk_label[ix]<0 ? trace_origin_higgs(pythia.event,ix,bcflag):-999;
+                    trk_origin.push_back(origin);
+                    trk_bcflag.push_back(bcflag);
+                    ++ntracks;
+                    
+                    // L.V. store trks as vector<vector<>>
+                    trk_pT_tmp.push_back(event_trk_pT[ix]);
+                    trk_eta_tmp.push_back(event_trk_eta[ix]);
+                    trk_phi_tmp.push_back(event_trk_phi[ix]);
+                    trk_e_tmp.push_back(event_trk_e[ix]);
+                    trk_q_tmp.push_back(event_trk_q[ix]);
+                    trk_d0_tmp.push_back(event_trk_d0[ix]);
+                    trk_z0_tmp.push_back(event_trk_z0[ix]);
+                    trk_pid_tmp.push_back(event_trk_pid[ix]);
+                    trk_label_tmp.push_back(event_trk_label[ix]);
+                    trk_origin_tmp.push_back(origin);
+                    trk_bcflag_tmp.push_back(bcflag);
+                }
+                jet_ntracks.push_back(ntracks);
+                track_index += ntracks;
+                
+                trk_jet_pT.push_back(trk_pT_tmp);
+                trk_jet_eta.push_back(trk_eta_tmp);
+                trk_jet_phi.push_back(trk_phi_tmp);
+                trk_jet_e.push_back(trk_e_tmp);
+                trk_jet_q.push_back(trk_q_tmp);
+                trk_jet_d0.push_back(trk_d0_tmp);
+                trk_jet_z0.push_back(trk_z0_tmp);
+                trk_jet_pid.push_back(trk_pid_tmp);
+                trk_jet_label.push_back(trk_label_tmp);
+                trk_jet_origin.push_back(trk_origin_tmp);
+                trk_jet_bcflag.push_back(trk_bcflag_tmp);
+            }
+        }
         FastJet->Fill();
-
-    } // End pythia event loop
+    }
 
     output->Write();
     output->Close();
