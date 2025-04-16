@@ -1,34 +1,31 @@
 ## Quick Start
 Clone the repo:
 ```
-git clone --recursive git@github.com:LukeV37/Top_Polarimetry.git
+git clone --recursive git@github.com:LukeV37/Dataset_Production.git
 ```
 
-Ensure dependencies are met, and install the submodules:
+Ensure dependencies are met, and install the submodules using the command below. \
+This only needs to be done once. Please be patient while submodules build...
 ```
 ./build_submodules.sh
 ```
 
-Please be patient while submodules build...
+Install python virtual environment using the command below. \
+This needs to be done once every login.
+```
+source setup.sh
+```
 
 ## How To Generate Datasets
 
-### Madgraph
-To run madgraph simulation, run the following
-```
-cd madgraph
-./run.sh
-./post_process.sh
-```
-The lhe file file is generated, and the training labels are written to root file. 
+### Modify Job Options
+Modify the job options in the `job.config` file.
 
-### Pythia
-To shower in pythia, run the following
+### Generate Dataset
+Simply execute the command:
 ```
-cd pythia
-./run.sh
+./run_job.sh
 ```
-The training data will be written to a root file. 
 
 ## Dependencies
 Runs on most linux environments. Developed on Ubuntu 22.04.
