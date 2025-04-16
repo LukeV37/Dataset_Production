@@ -21,7 +21,7 @@ num_events_per_run=$4
 ###########################
 
 # Edit process card
-sed "s/OUTPUT_DIRECTORY/${dataset_tag}/" include/proc_card_mg5.dat > proc_card.tmp
+sed "s/OUTPUT_DIRECTORY/WS_${dataset_tag}/" include/proc_card_mg5.dat > proc_card.tmp
 
 # Configure HHbbbb
 if [ "$process" = "HHbbbb" ]; then
@@ -35,7 +35,7 @@ if [ "$process" = "bbbb" ]; then
   sed -i "s/MODEL/sm/" proc_card.tmp
 
   min_ptb_filter=60 #GeV
-  sed -i "s/0.0  = ptb/$min_ptb_filter  = ptb/" ${dataset_tag}/Cards/run_card.dat
+  sed -i "s/0.0  = ptb/$min_ptb_filter  = ptb/" WS_${dataset_tag}/Cards/run_card.dat
 fi
 
 # Configure ttbar semiLeptonic
@@ -54,7 +54,7 @@ sed -i "s/set nevents.*/set nevents $num_events_per_run/" multi_run.tmp
 # Generate the Events!
 #"./pp_tt_semi_full_${dataset_tag}/bin/generate_events" -f
 echo "Please be patient while MadGraph generates processes..."
-"./${dataset_tag}/bin/madevent" multi_run.tmp | tee "MadGraph_${dataset_tag}.log"
+"./WS_${dataset_tag}/bin/madevent" multi_run.tmp | tee "WS_${dataset_tag}/MadGraph_${dataset_tag}.log"
 
 # Clean up workspace (generated automatically by madgraph binary)
 rm -f py.py
