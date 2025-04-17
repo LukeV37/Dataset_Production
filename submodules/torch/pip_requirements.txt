@@ -1,5 +1,5 @@
+torch
 uproot
 awkward
 numpy
-torch
 matplotlib
