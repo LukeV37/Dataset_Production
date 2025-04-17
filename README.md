@@ -28,12 +28,12 @@ Simply execute the command:
 ```
 
 ## Dependencies
-Runs on most linux environments. Developed on Ubuntu 22.04.
+Runs on most linux environments with [ROOT](https://root.cern/install/) installed. Developed on Ubuntu 22.04.
 
 Required Dependencies:
 <ul>
   <li>python3</li>
-  <li>[ROOTv6](https://root.cern/install/)</li>
+  <li>ROOT</li>
   <li>g++</li>
   <li>gfortran</li>
   <li>gzip</li>
