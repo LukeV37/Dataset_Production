@@ -116,6 +116,9 @@ int main(int argc, char *argv[])
     pythia.readString("Beams:sigmaVertexY = 0.3");
     pythia.readString("Beams:sigmaVertexZ = 50.");
 
+    pythia.readString("Random:setSeed = on");
+    pythia.readString("Random:seed = 1");
+
     // If Pythia fails to initialize, exit with error.
     if (!pythia.init()) return 1;
 
