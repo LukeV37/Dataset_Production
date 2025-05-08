@@ -2,7 +2,7 @@
 
 # Read options from config
 if [[ -z $1 ]]; then
-  source job.config
+  source configs/job.config
 else
   source $1
 fi
