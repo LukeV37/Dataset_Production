@@ -49,9 +49,9 @@ print("\tNum Tracks features: ", len(trk_feats[0][0][0]))
 
 print("Shuffling Events...")
 # Shuffle events
-p = np.random.permutation(len(jet_feats))
-jet_feats = jet_feats[p]
-trk_feats = trk_feats[p]
+#p = np.random.permutation(len(jet_feats))
+#jet_feats = jet_feats[p]
+#trk_feats = trk_feats[p]
 
 print("Applying Cuts...")
 # Apply Jet cuts
@@ -83,8 +83,10 @@ var_list = ['pT','Eta','Phi','Mass']
 norm_list = []
 for i in range(num_jet_feats):
     feat = selected_jets[:,:,i]
-    mean = ak.mean(feat)
-    std = ak.std(feat)
+    #mean = ak.mean(feat)
+    #std = ak.std(feat)
+    mean = 0
+    std = 1
     norm = (feat-mean)/std
     norm_list.append(norm)
 
@@ -141,8 +143,10 @@ var_list = ['pT','Eta','Phi','Charge', 'd0', 'z0']
 norm_list = []
 for i in range(num_trk_feats):
     feat = selected_tracks[:,:,:,i]
-    mean = ak.mean(feat)
-    std = ak.std(feat)
+    #mean = ak.mean(feat)
+    #std = ak.std(feat)
+    mean = 0
+    std = 1
     norm = (feat-mean)/std
     norm_list.append(norm)
     fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10,5))
@@ -187,8 +191,12 @@ selected_tracks = ak.concatenate(Norm_list, axis=3)
 print("Padding Tracks to common length...")
 all_tracks = ak.flatten(selected_tracks, axis=2)
 num_events = len(selected_jets)
-Event_Data = []
-Event_Labels = []
+Jet_Data = []
+Jet_Labels = []
+Jet_Track_Data = []
+Jet_Track_Labels = []
+Track_Data = []
+Track_Labels = []
 for event in range(num_events):
     if event%1==0:
         print("\tProcessing: ", event, " / ", num_events, end="\r")
@@ -206,15 +214,23 @@ for event in range(num_events):
     # Append all data *as torch tensors* to lists
     flat_tracks_data = torch.Tensor(all_tracks[event][:,0:-1])
     flat_tracks_label = torch.Tensor(all_tracks[event][:,-1])
-    Event_Data.append((jets[:,0:-2],tracks[:,:,0:-1],flat_tracks_data))
-    Event_Labels.append((jets[:,-2:],flat_tracks_label.reshape(-1,1)))
+
+    Jet_Data.append(jets[:,0:-2])
+    Jet_Labels.append(jets[:,-2:])
+
+    Jet_Track_Data.append(tracks[:,:,0:-1])
+    Jet_Track_Labels.append(tracks[:,:,-1].reshape(-1,1))
+
+    Track_Data.append(flat_tracks_data)
+    Track_Labels.append(flat_tracks_label.reshape(-1,1))
+
 print("\tProcessing: ", num_events, " / ", num_events)
 
 print("Split dataset into train, val, test...")
 train_split = int(0.7*num_events)  # 70% train
 test_split = int(0.75*num_events)  #  5% val + 25% test
 
-Event_List = list(zip(Event_Data, Event_Labels))
+Event_List = list(zip(Jet_Data, Jet_Track_Data, Track_Data, Jet_Labels, Jet_Track_Labels, Track_Labels))
 
 Events_training = Event_List[0:train_split]
 Events_validation = Event_List[train_split:test_split]
@@ -224,9 +240,18 @@ print("\tTraining Events: ", len(Events_training))
 print("\tValidation Events: ", len(Events_validation))
 print("\tTesting Events: ", len(Events_testing))
 
-X_train, y_train = list(zip(*Events_training))
-X_val, y_val = list(zip(*Events_validation))
-X_test, y_test = list(zip(*Events_testing))
+Jet_Data_Train, Jet_Track_Data_Train, Track_Data_Train, Jet_Label_Train, Jet_Track_Label_Train, Track_Label_Train = list(zip(*Events_training))
+Jet_Data_Val, Jet_Track_Data_Val, Track_Data_Val, Jet_Label_Val, Jet_Track_Label_Val, Track_Label_Val = list(zip(*Events_training))
+Jet_Data_Test, Jet_Track_Data_Test, Track_Data_Test, Jet_Label_Test, Jet_Track_Label_Test, Track_Label_Test = list(zip(*Events_training))
+
+X_train = [Jet_Data_Train, Jet_Track_Data_Train, Track_Data_Train]
+y_train = [Jet_Label_Train, Jet_Track_Label_Train, Track_Label_Train]
+
+X_val = [Jet_Data_Val, Jet_Track_Data_Val, Track_Data_Val]
+y_val = [Jet_Label_Val, Jet_Track_Label_Val, Track_Label_Val]
+
+X_test = [Jet_Data_Test, Jet_Track_Data_Test, Track_Data_Test]
+y_test = [Jet_Label_Test, Jet_Track_Label_Test, Track_Label_Test]
 
 data = (X_train, y_train, X_val, y_val, X_test, y_test)
 
