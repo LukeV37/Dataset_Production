@@ -56,26 +56,26 @@ int main(int argc, char *argv[])
 
     // Define tree with jets clustered using fast jet
     TTree *FastJet = new TTree("fastjet", "fastjet");
-    std::vector<float> jet_pt, jet_eta, jet_phi, jet_m;
-    FastJet->Branch("jet_pt", &jet_pt);
-    FastJet->Branch("jet_eta", &jet_eta);
-    FastJet->Branch("jet_phi", &jet_phi);
-    FastJet->Branch("jet_m", &jet_m);
+    //std::vector<float> jet_pt, jet_eta, jet_phi, jet_m;
+    //FastJet->Branch("jet_pt", &jet_pt);
+    //FastJet->Branch("jet_eta", &jet_eta);
+    //FastJet->Branch("jet_phi", &jet_phi);
+    //FastJet->Branch("jet_m", &jet_m);
 
-    std::vector<std::vector<float>> trk_jet_pT, trk_jet_eta, trk_jet_phi, trk_jet_e;
-    std::vector<std::vector<float>> trk_jet_q, trk_jet_d0, trk_jet_z0;
-    std::vector<std::vector<int>> trk_jet_pid, trk_jet_label, trk_jet_origin, trk_jet_bcflag;
-    FastJet->Branch("trk_jet_pT", &trk_jet_pT);
-    FastJet->Branch("trk_jet_eta", &trk_jet_eta);
-    FastJet->Branch("trk_jet_phi", &trk_jet_phi);
-    FastJet->Branch("trk_jet_e", &trk_jet_e);
-    FastJet->Branch("trk_jet_q", &trk_jet_q);
-    FastJet->Branch("trk_jet_d0", &trk_jet_d0);
-    FastJet->Branch("trk_jet_z0", &trk_jet_z0);
-    FastJet->Branch("trk_jet_pid", &trk_jet_pid);
-    FastJet->Branch("trk_jet_label", &trk_jet_label);
-    FastJet->Branch("trk_jet_origin", &trk_jet_origin);
-    FastJet->Branch("trk_jet_bcflag", &trk_jet_bcflag);
+    //std::vector<std::vector<float>> trk_jet_pT, trk_jet_eta, trk_jet_phi, trk_jet_e;
+    //std::vector<std::vector<float>> trk_jet_q, trk_jet_d0, trk_jet_z0;
+    //std::vector<std::vector<int>> trk_jet_pid, trk_jet_label, trk_jet_origin, trk_jet_bcflag;
+    //FastJet->Branch("trk_jet_pT", &trk_jet_pT);
+    //FastJet->Branch("trk_jet_eta", &trk_jet_eta);
+    //FastJet->Branch("trk_jet_phi", &trk_jet_phi);
+    //FastJet->Branch("trk_jet_e", &trk_jet_e);
+    //FastJet->Branch("trk_jet_q", &trk_jet_q);
+    //FastJet->Branch("trk_jet_d0", &trk_jet_d0);
+    //FastJet->Branch("trk_jet_z0", &trk_jet_z0);
+    //FastJet->Branch("trk_jet_pid", &trk_jet_pid);
+    //FastJet->Branch("trk_jet_label", &trk_jet_label);
+    //FastJet->Branch("trk_jet_origin", &trk_jet_origin);
+    //FastJet->Branch("trk_jet_bcflag", &trk_jet_bcflag);
 
     std::vector<float> trk_pT, trk_eta, trk_phi, trk_e;
     std::vector<float> trk_q, trk_d0, trk_z0;
@@ -89,13 +89,13 @@ int main(int argc, char *argv[])
     FastJet->Branch("trk_z0", &trk_z0);
     FastJet->Branch("trk_pid", &trk_pid);
     FastJet->Branch("trk_label", &trk_label);
-    FastJet->Branch("trk_origin", &trk_origin);
-    FastJet->Branch("trk_bcflag", &trk_bcflag);
+    //FastJet->Branch("trk_origin", &trk_origin);
+    //FastJet->Branch("trk_bcflag", &trk_bcflag);
 
-    std::vector<int> jet_ntracks;
-    std::vector<int> jet_track_index;
-    FastJet->Branch("jet_ntracks", &jet_ntracks);
-    FastJet->Branch("jet_track_index", &jet_track_index);
+    //std::vector<int> jet_ntracks;
+    //std::vector<int> jet_track_index;
+    //FastJet->Branch("jet_ntracks", &jet_ntracks);
+    //FastJet->Branch("jet_track_index", &jet_track_index);
 
     // Configure HS Process
     Pythia8::Pythia pythia;
@@ -186,16 +186,20 @@ int main(int argc, char *argv[])
             double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
 
             ID++;
-            event_trk_pT.push_back(pT);
-            event_trk_eta.push_back(eta);
-            event_trk_phi.push_back(phi);
-            event_trk_e.push_back(e);
-            event_trk_q.push_back(q);
-            event_trk_d0.push_back(d0);
-            event_trk_z0.push_back(z0);
-            event_trk_pid.push_back(id);
-            event_trk_label.push_back(label);
 
+            if (p.isFinal() and p.pT()>1.0){
+                event_trk_pT.push_back(pT);
+                event_trk_eta.push_back(eta);
+                event_trk_phi.push_back(phi);
+                event_trk_e.push_back(e);
+                event_trk_q.push_back(q);
+                event_trk_d0.push_back(d0);
+                event_trk_z0.push_back(z0);
+                event_trk_pid.push_back(id);
+                event_trk_label.push_back(label);
+            }
+
+            /*
             if (not p.isFinal()) continue;
             // A.X.: skip neutrinos
             if (abs(id)==12 || abs(id)==14 || abs(id)==16) continue;
@@ -203,6 +207,7 @@ int main(int argc, char *argv[])
                 fj.set_user_index(ID);
                 stbl_ptcls.push_back(fj);
                 ptcls_hs.push_back(p);
+            */
         }
 
         // Add in pileup particles!
@@ -237,16 +242,19 @@ int main(int argc, char *argv[])
                 double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
 
                 ID++;
-                event_trk_pT.push_back(pT);
-                event_trk_eta.push_back(eta);
-                event_trk_phi.push_back(phi);
-                event_trk_e.push_back(e);
-                event_trk_q.push_back(q);
-                event_trk_d0.push_back(d0);
-                event_trk_z0.push_back(z0);
-                event_trk_pid.push_back(id);
-                event_trk_label.push_back(label);
+                if (p.isFinal() and p.pT()>1.0){
+                    event_trk_pT.push_back(pT);
+                    event_trk_eta.push_back(eta);
+                    event_trk_phi.push_back(phi);
+                    event_trk_e.push_back(e);
+                    event_trk_q.push_back(q);
+                    event_trk_d0.push_back(d0);
+                    event_trk_z0.push_back(z0);
+                    event_trk_pid.push_back(id);
+                    event_trk_label.push_back(label);
+                }
 
+                /*
                 if (not p.isFinal()) continue;
                 // A.X.: skip neutrinos
                 if (abs(id)==12 || abs(id)==14 || abs(id)==16) continue;
@@ -254,26 +262,27 @@ int main(int argc, char *argv[])
                         fj.set_user_index(ID);
                         stbl_ptcls.push_back(fj);
                         ptcls_pu.push_back(p);
+                */
             }
         }
 
         // prepare for filling
-        jet_pt.clear();
-        jet_eta.clear();
-        jet_phi.clear();
-        jet_m.clear();
+        //jet_pt.clear();
+        //jet_eta.clear();
+        //jet_phi.clear();
+        //jet_m.clear();
 
-        trk_jet_pT.clear();
-        trk_jet_eta.clear();
-        trk_jet_phi.clear();
-        trk_jet_e.clear();
-        trk_jet_q.clear();
-        trk_jet_d0.clear();
-        trk_jet_z0.clear();
-        trk_jet_pid.clear();
-        trk_jet_label.clear();
-        trk_jet_origin.clear();
-        trk_jet_bcflag.clear();
+        //trk_jet_pT.clear();
+        //trk_jet_eta.clear();
+        //trk_jet_phi.clear();
+        //trk_jet_e.clear();
+        //trk_jet_q.clear();
+        //trk_jet_d0.clear();
+        //trk_jet_z0.clear();
+        //trk_jet_pid.clear();
+        //trk_jet_label.clear();
+        //trk_jet_origin.clear();
+        //trk_jet_bcflag.clear();
 
         trk_pT.clear();
         trk_eta.clear();
@@ -286,12 +295,23 @@ int main(int argc, char *argv[])
         trk_label.clear();
         trk_origin.clear();
         trk_bcflag.clear();
+        
+        trk_pT = event_trk_pT;
+        trk_eta = event_trk_eta;
+        trk_phi = event_trk_phi;
+        trk_e = event_trk_e;
+        trk_q = event_trk_q;
+        trk_d0 = event_trk_d0;
+        trk_z0 = event_trk_z0;
+        trk_pid = event_trk_pid;
+        trk_label = event_trk_label;
 
-        jet_ntracks.clear();
-        jet_track_index.clear();
-        int track_index = 0;
+        //jet_ntracks.clear();
+        //jet_track_index.clear();
+        //int track_index = 0;
 
         // Cluster stable particles using anti-kt
+        /*
         for (auto jetDef:jetDefs) {
             fastjet::ClusterSequence clustSeq(stbl_ptcls, jetDef.second);
             auto jets = fastjet::sorted_by_pt( clustSeq.inclusive_jets(pTmin_jet) );
@@ -355,6 +375,7 @@ int main(int argc, char *argv[])
                 trk_jet_bcflag.push_back(trk_bcflag_tmp);
             }
         }
+        */
         FastJet->Fill();
     }
 

@@ -40,17 +40,14 @@ if [ "$bypass_preprocessing" = false ]; then
   echo "Please be patient for Preprocessing..."
   start=`date +%s`
   cd preprocessing
-  dir_preprocessing="WS_${preproc_out_tag}/logs"
-  dir_datasets="WS_${preproc_out_tag}/data"
-  mkdir -p "${dir_datasets}"
 
   job=0
   batch=1
   for (( i=0 ; i<$num_runs_preproc; i++ ));
   do
     echo -e "\t\tSubmitting job to preprocess run $i"
-    mkdir -p "${dir_preprocessing}/run_$i"
-    python -u preprocessing.py "../pythia/WS_${preproc_in_tag}/data/dataset_showered_run_${i}.root" "${dir_datasets}/dataset_preprocessed_run_$i.pkl" "$dir_preprocessing/run_$i" > "${dir_preprocessing}/run_$i/preprocessing.log" &
+    mkdir -p "WS_${preproc_out_tag}/run_$i"
+    python -u AE_preprocessing.py ${preproc_in_tag1} ${preproc_in_tag2} $i "WS_$preproc_out_tag/run_$i" > "WS_${preproc_out_tag}/run_$i/preprocessing.log" &
     job=$((job+1))
     if [ $job == $max_cpu_cores ]; then
       echo -e "\tStopping jobs submissions! Please wait for batch $batch to finish..."
@@ -60,10 +57,12 @@ if [ "$bypass_preprocessing" = false ]; then
     fi
   done
   wait
+  echo -e "\tPreprocessing Done!"
+
+  python -u Combine_Runs.py $num_runs_preproc "WS_${preproc_out_tag}"
 
   cd $WORKING_DIR
   end=`date +%s`
   runtime=$((end-start))
-  echo -e "\tPreprocessing Done!"
   echo -e "\tTime (sec): $runtime"
 fi
