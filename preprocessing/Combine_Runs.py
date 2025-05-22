@@ -18,9 +18,22 @@ for i in range(num_runs):
     AE_input+=in_data
     AE_output+=out_data
 
+num_events = len(AE_input)
+
+train_split = int(0.7*num_events)  # 70% train
+test_split = int(0.75*num_events)  #  5% val + 25% test
+
+X_train, y_train = [AE_input[:train_split], AE_output[:train_split]]
+X_val, y_val = [AE_input[train_split:test_split], AE_output[train_split:test_split]]
+X_test, y_test = [AE_input[test_split:], AE_output[test_split:]]
+
 data_dict = {
-    "AE_input": AE_input,
-    "AE_output": AE_output,
+    "X_train": X_train,
+    "y_train": y_train,
+    "X_val": X_val,
+    "y_val": y_val,
+    "X_test": X_test,
+    "y_test": y_test,
 }
 
 with open(out_dir_data+"/data_combined.pkl","wb") as f:
