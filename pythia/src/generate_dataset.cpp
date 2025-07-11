@@ -183,11 +183,11 @@ int main(int argc, char *argv[])
 
             double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
 
-            ID++;
-
             if (not p.isFinal()) continue;
 
             if (p.pT()>min_trk_pT){
+                ID++;
+
                 event_trk_pT.push_back(pT);
                 event_trk_eta.push_back(eta);
                 event_trk_phi.push_back(phi);
@@ -238,11 +238,11 @@ int main(int argc, char *argv[])
 
                 double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
 
-                ID++;
-
                 if (not p.isFinal()) continue;
 
                 if (p.pT()>min_trk_pT){
+                    ID++;
+
                     event_trk_pT.push_back(pT);
                     event_trk_eta.push_back(eta);
                     event_trk_phi.push_back(phi);
