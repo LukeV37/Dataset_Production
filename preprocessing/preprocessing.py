@@ -145,11 +145,13 @@ print("\tProcessing: ", num_events, " / ", num_events)
 """
     
 print("Nested Tensor Jets")
-selected_jets = torch.nested.nested_tensor(ak.to_list(selected_jets), layout=torch.jagged)
+#selected_jets = torch.nested.nested_tensor(ak.to_list(selected_jets), layout=torch.jagged)
+selected_jets = selected_jets
 print("Nested Tensor Jets-Trks")
 selected_jet_trks = selected_tracks
 print("Nested Tensor All-Trks")
-all_trks = torch.nested.nested_tensor(ak.to_list(all_tracks), layout=torch.jagged)
+#all_trks = torch.nested.nested_tensor(ak.to_list(all_tracks), layout=torch.jagged)
+all_trks = all_tracks
 
 data_dict ={"jets": selected_jets, "jet_trks": selected_jet_trks, "all_trks": all_trks}
 
