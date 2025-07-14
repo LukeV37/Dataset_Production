@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     char *run_num = argv[3];
     int mu = atoi(argv[4]);
     double pTmin_jet = atof(argv[5]);
-    double min_trk_pT = 1.0;
+    double min_trk_pT = 0.0;
     
     std::string inputFile = std::string("../../madgraph/WS_")+std::string(in_dataset_tag)+std::string("/Events/run_01_")+std::string(run_num)+std::string("/unweighted_events.lhe.gz");
     TString outputFile = TString("../WS_")+TString(out_dataset_tag)+TString("/data/dataset_showered_run_")+TString(run_num)+TString(".root");
