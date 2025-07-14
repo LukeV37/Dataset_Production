@@ -60,10 +60,12 @@ if [ "$bypass_preprocessing" = false ]; then
     fi
   done
   wait
+  echo -e "\tPreprocessing Done!"
+
+  python -u Combine_Runs.py $num_runs_preproc "WS_${preproc_out_tag}"
 
   cd $WORKING_DIR
   end=`date +%s`
   runtime=$((end-start))
-  echo -e "\tPreprocessing Done!"
   echo -e "\tTime (sec): $runtime"
 fi
