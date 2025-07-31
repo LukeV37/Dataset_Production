@@ -43,7 +43,6 @@ int main(int argc, char *argv[])
     char *run_num = argv[3];
     int mu = atoi(argv[4]);
     double pTmin_jet = atof(argv[5]);
-    double min_trk_pT = 0.0;
     
     std::string inputFile = std::string("../../madgraph/WS_")+std::string(in_dataset_tag)+std::string("/Events/run_01_")+std::string(run_num)+std::string("/unweighted_events.lhe.gz");
     TString outputFile = TString("../WS_")+TString(out_dataset_tag)+TString("/data/dataset_showered_run_")+TString(run_num)+TString(".root");
@@ -185,19 +184,17 @@ int main(int argc, char *argv[])
 
             if (not p.isFinal()) continue;
 
-            if (p.pT()>min_trk_pT){
-                ID++;
+            ID++;
 
-                event_trk_pT.push_back(pT);
-                event_trk_eta.push_back(eta);
-                event_trk_phi.push_back(phi);
-                event_trk_e.push_back(e);
-                event_trk_q.push_back(q);
-                event_trk_d0.push_back(d0);
-                event_trk_z0.push_back(z0);
-                event_trk_pid.push_back(id);
-                event_trk_label.push_back(label);
-            }
+            event_trk_pT.push_back(pT);
+            event_trk_eta.push_back(eta);
+            event_trk_phi.push_back(phi);
+            event_trk_e.push_back(e);
+            event_trk_q.push_back(q);
+            event_trk_d0.push_back(d0);
+            event_trk_z0.push_back(z0);
+            event_trk_pid.push_back(id);
+            event_trk_label.push_back(label);
 
             // A.X.: skip neutrinos
             if (abs(id)==12 || abs(id)==14 || abs(id)==16) continue;
@@ -240,19 +237,17 @@ int main(int argc, char *argv[])
 
                 if (not p.isFinal()) continue;
 
-                if (p.pT()>min_trk_pT){
-                    ID++;
+                ID++;
 
-                    event_trk_pT.push_back(pT);
-                    event_trk_eta.push_back(eta);
-                    event_trk_phi.push_back(phi);
-                    event_trk_e.push_back(e);
-                    event_trk_q.push_back(q);
-                    event_trk_d0.push_back(d0);
-                    event_trk_z0.push_back(z0);
-                    event_trk_pid.push_back(id);
-                    event_trk_label.push_back(label);
-                }
+                event_trk_pT.push_back(pT);
+                event_trk_eta.push_back(eta);
+                event_trk_phi.push_back(phi);
+                event_trk_e.push_back(e);
+                event_trk_q.push_back(q);
+                event_trk_d0.push_back(d0);
+                event_trk_z0.push_back(z0);
+                event_trk_pid.push_back(id);
+                event_trk_label.push_back(label);
 
                 // A.X.: skip neutrinos
                 if (abs(id)==12 || abs(id)==14 || abs(id)==16) continue;
@@ -318,35 +313,33 @@ int main(int argc, char *argv[])
                 for (auto trk:jet.constituents()) {
                     int ix = trk.user_index()-1;
 
-                    if (event_trk_pT[ix]>min_trk_pT){
-                        trk_pT.push_back(event_trk_pT[ix]);
-                        trk_eta.push_back(event_trk_eta[ix]);
-                        trk_phi.push_back(event_trk_phi[ix]);
-                        trk_e.push_back(event_trk_e[ix]);
-                        trk_q.push_back(event_trk_q[ix]);
-                        trk_d0.push_back(event_trk_d0[ix]);
-                        trk_z0.push_back(event_trk_z0[ix]);
-                        trk_pid.push_back(event_trk_pid[ix]);
-                        trk_label.push_back(event_trk_label[ix]);
-                        int bcflag = 0;
-                        int origin = event_trk_label[ix]<0 ? trace_origin_higgs(pythia.event,ix,bcflag):-999;
-                        trk_origin.push_back(origin);
-                        trk_bcflag.push_back(bcflag);
-                        ++ntracks;
-                        
-                        // L.V. store trks as vector<vector<>>
-                        trk_pT_tmp.push_back(event_trk_pT[ix]);
-                        trk_eta_tmp.push_back(event_trk_eta[ix]);
-                        trk_phi_tmp.push_back(event_trk_phi[ix]);
-                        trk_e_tmp.push_back(event_trk_e[ix]);
-                        trk_q_tmp.push_back(event_trk_q[ix]);
-                        trk_d0_tmp.push_back(event_trk_d0[ix]);
-                        trk_z0_tmp.push_back(event_trk_z0[ix]);
-                        trk_pid_tmp.push_back(event_trk_pid[ix]);
-                        trk_label_tmp.push_back(event_trk_label[ix]);
-                        trk_origin_tmp.push_back(origin);
-                        trk_bcflag_tmp.push_back(bcflag);
-                    }
+                    trk_pT.push_back(event_trk_pT[ix]);
+                    trk_eta.push_back(event_trk_eta[ix]);
+                    trk_phi.push_back(event_trk_phi[ix]);
+                    trk_e.push_back(event_trk_e[ix]);
+                    trk_q.push_back(event_trk_q[ix]);
+                    trk_d0.push_back(event_trk_d0[ix]);
+                    trk_z0.push_back(event_trk_z0[ix]);
+                    trk_pid.push_back(event_trk_pid[ix]);
+                    trk_label.push_back(event_trk_label[ix]);
+                    int bcflag = 0;
+                    int origin = event_trk_label[ix]<0 ? trace_origin_higgs(pythia.event,ix,bcflag):-999;
+                    trk_origin.push_back(origin);
+                    trk_bcflag.push_back(bcflag);
+                    ++ntracks;
+
+                    // L.V. store trks as vector<vector<>>
+                    trk_pT_tmp.push_back(event_trk_pT[ix]);
+                    trk_eta_tmp.push_back(event_trk_eta[ix]);
+                    trk_phi_tmp.push_back(event_trk_phi[ix]);
+                    trk_e_tmp.push_back(event_trk_e[ix]);
+                    trk_q_tmp.push_back(event_trk_q[ix]);
+                    trk_d0_tmp.push_back(event_trk_d0[ix]);
+                    trk_z0_tmp.push_back(event_trk_z0[ix]);
+                    trk_pid_tmp.push_back(event_trk_pid[ix]);
+                    trk_label_tmp.push_back(event_trk_label[ix]);
+                    trk_origin_tmp.push_back(origin);
+                    trk_bcflag_tmp.push_back(bcflag);
                 }
                 jet_ntracks.push_back(ntracks);
                 track_index += ntracks;
