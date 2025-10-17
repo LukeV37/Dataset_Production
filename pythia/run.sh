@@ -24,6 +24,10 @@ mkdir -p "WS_${out_tag}/data"
 
 cd src
 make generate_dataset
+cd scripts
+make add_JVT
+make add_true_EMfrac
+cd ..
 
 echo "Please be patient while Pythia performs hadronization..."
 
@@ -33,7 +37,7 @@ for (( i=0 ; i<$runs ; i++ ));
 do
     echo -e "\t\tSubmitting job to shower run $i"
     outfile="../WS_${out_tag}/data/dataset_showered_run_$i.root"
-    { ./shower_dataset $in_tag $out_tag $i $mu $minJetpT; root -q -l -b scripts/add_JVT.cpp\(\""$outfile"\"\); root -q -l -b scripts/add_true_EMfrac.cpp\(\""$outfile"\"\);} > "../WS_${out_tag}/logs/${out_tag}_${i}.log" 2>&1 &
+    { ./shower_dataset $in_tag $out_tag $i $mu $minJetpT; ./scripts/add_JVT "$outfile"; ./scripts/add_true_EMfrac "$outfile";} > "../WS_${out_tag}/logs/${out_tag}_${i}.log" 2>&1 &
     job=$((job+1))
     if [ $job == $max_cpu_cores ]; then
         echo -e "\tStopping jobs submissions! Please wait for batch $batch to finish..."
@@ -45,6 +49,9 @@ do
 done
 wait
 make clean
+cd scripts
+make clean
+cd ..
 cd ..
 
 echo -e "\tPythia Showering Done!"
