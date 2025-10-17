@@ -51,8 +51,8 @@ int main(int argc, char *argv[])
     TFile *output = new TFile(outputFile, "recreate");
     
     // Define local vars to be linked to TTree branches
-    int id, status, ID, label;
-    double pT, eta, phi, e, q, xProd, yProd, zProd, tProd, xDec, yDec, zDec, tDec;
+    int id, ID, label;
+    double pT, eta, phi, q, xProd, yProd, zProd, tProd, xDec, yDec, zDec, tDec;
 
     // Define tree with jets clustered using fast jet
     TTree *FastJet = new TTree("fastjet", "fastjet");
@@ -62,40 +62,19 @@ int main(int argc, char *argv[])
     FastJet->Branch("jet_phi", &jet_phi);
     FastJet->Branch("jet_m", &jet_m);
 
-    std::vector<std::vector<float>> trk_jet_pT, trk_jet_eta, trk_jet_phi, trk_jet_e;
-    std::vector<std::vector<float>> trk_jet_q, trk_jet_d0, trk_jet_z0;
-    std::vector<std::vector<int>> trk_jet_pid, trk_jet_label, trk_jet_origin, trk_jet_bcflag;
-    FastJet->Branch("trk_jet_pT", &trk_jet_pT);
-    FastJet->Branch("trk_jet_eta", &trk_jet_eta);
-    FastJet->Branch("trk_jet_phi", &trk_jet_phi);
-    FastJet->Branch("trk_jet_e", &trk_jet_e);
-    FastJet->Branch("trk_jet_q", &trk_jet_q);
-    FastJet->Branch("trk_jet_d0", &trk_jet_d0);
-    FastJet->Branch("trk_jet_z0", &trk_jet_z0);
-    FastJet->Branch("trk_jet_pid", &trk_jet_pid);
-    FastJet->Branch("trk_jet_label", &trk_jet_label);
-    FastJet->Branch("trk_jet_origin", &trk_jet_origin);
-    FastJet->Branch("trk_jet_bcflag", &trk_jet_bcflag);
+    std::vector<std::vector<int>> jet_trk_association;
+    FastJet->Branch("jet_trk_association", &jet_trk_association);
 
-    std::vector<float> trk_pT, trk_eta, trk_phi, trk_e;
-    std::vector<float> trk_q, trk_d0, trk_z0;
-    std::vector<int> trk_pid, trk_label, trk_origin, trk_bcflag;
+    std::vector<float> trk_pT, trk_eta, trk_phi, trk_q, trk_d0, trk_z0;
+    std::vector<int> trk_pid, trk_label;
     FastJet->Branch("trk_pT", &trk_pT);
     FastJet->Branch("trk_eta", &trk_eta);
     FastJet->Branch("trk_phi", &trk_phi);
-    FastJet->Branch("trk_e", &trk_e);
     FastJet->Branch("trk_q", &trk_q);
     FastJet->Branch("trk_d0", &trk_d0);
     FastJet->Branch("trk_z0", &trk_z0);
     FastJet->Branch("trk_pid", &trk_pid);
     FastJet->Branch("trk_label", &trk_label);
-    FastJet->Branch("trk_origin", &trk_origin);
-    FastJet->Branch("trk_bcflag", &trk_bcflag);
-
-    std::vector<int> jet_ntracks;
-    std::vector<int> jet_track_index;
-    FastJet->Branch("jet_ntracks", &jet_ntracks);
-    FastJet->Branch("jet_track_index", &jet_track_index);
 
     // Configure HS Process
     Pythia8::Pythia pythia;
@@ -122,6 +101,13 @@ int main(int argc, char *argv[])
     // Configure PU Process
     Pythia8::Pythia pythiaPU;
     pythiaPU.readFile("./config/pileup.cmnd");
+
+    // Set Vertex Spreading
+    pythiaPU.readString("Beams:allowVertexSpread = on");
+    pythiaPU.readString("Beams:sigmaVertexX = 0.3");
+    pythiaPU.readString("Beams:sigmaVertexY = 0.3");
+    pythiaPU.readString("Beams:sigmaVertexZ = 50.");
+
     if (mu > 0) pythiaPU.init();
 
     // Configure antikt_algorithm
@@ -143,31 +129,43 @@ int main(int argc, char *argv[])
           continue;
         }
 
+        // Track ID starts at zero for each event
         ID = 0;
-        std::vector<float> event_trk_pT;
-        std::vector<float> event_trk_eta;
-        std::vector<float> event_trk_phi;
-        std::vector<float> event_trk_e;
-        std::vector<float> event_trk_q;
-        std::vector<float> event_trk_d0;
-        std::vector<float> event_trk_z0;
-        std::vector<int> event_trk_pid;
-        std::vector<int> event_trk_label;
+
+        // clear previous events
+        jet_pt.clear();
+        jet_eta.clear();
+        jet_phi.clear();
+        jet_m.clear();
+
+        trk_pT.clear();
+        trk_eta.clear();
+        trk_phi.clear();
+        trk_q.clear();
+        trk_d0.clear();
+        trk_z0.clear();
+        trk_pid.clear();
+        trk_label.clear();
+
+        jet_trk_association.clear();
 
         int entries = pythia.event.size();
-        std::vector<Pythia8::Particle> ptcls_hs, ptcls_pu;
         std::vector<fastjet::PseudoJet> stbl_ptcls;
 
         // Add in hard scatter particles!
         for(int j=0;j<pythia.event.size();j++){
             auto &p = pythia.event[j];
-            id = p.id();
-            status = p.status();
+
+            if (not p.isFinal()) continue;
+
+            // A.X.: skip neutrinos
+            if (abs(p.id())==12 || abs(p.id())==14 || abs(p.id())==16) continue;
             
+            // Grab features
+            id = p.id();
             pT = p.pT();
             eta = p.eta();
             phi = p.phi();
-            e = p.e();
             q = p.charge();
             xProd = p.xProd();
             yProd = p.yProd();
@@ -177,31 +175,25 @@ int main(int argc, char *argv[])
             yDec = p.yDec();
             zDec = p.zDec();
             tDec = p.tDec();
-
-            label = -1; // HS Process
-
             double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
 
-            if (not p.isFinal()) continue;
+            // Grab label
+            label = -1; // HS Process
 
-            ID++;
+            // Append features and labels to vector
+            trk_pT.push_back(pT);
+            trk_eta.push_back(eta);
+            trk_phi.push_back(phi);
+            trk_q.push_back(q);
+            trk_d0.push_back(d0);
+            trk_z0.push_back(z0);
+            trk_pid.push_back(id);
+            trk_label.push_back(label);
 
-            event_trk_pT.push_back(pT);
-            event_trk_eta.push_back(eta);
-            event_trk_phi.push_back(phi);
-            event_trk_e.push_back(e);
-            event_trk_q.push_back(q);
-            event_trk_d0.push_back(d0);
-            event_trk_z0.push_back(z0);
-            event_trk_pid.push_back(id);
-            event_trk_label.push_back(label);
-
-            // A.X.: skip neutrinos
-            if (abs(id)==12 || abs(id)==14 || abs(id)==16) continue;
-                fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
-                fj.set_user_index(ID);
-                stbl_ptcls.push_back(fj);
-                ptcls_hs.push_back(p);
+            // Store particles for jet clustering
+            fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
+            fj.set_user_index(ID++);
+            stbl_ptcls.push_back(fj);
         }
 
         // Add in pileup particles!
@@ -214,13 +206,17 @@ int main(int argc, char *argv[])
             if (!pythiaPU.next()) continue;
             for (int j = 0; j < pythiaPU.event.size(); ++j) {
                 auto &p = pythiaPU.event[j];
-                id = p.id();
-                status = p.status();
 
+                if (not p.isFinal()) continue;
+
+                // A.X.: skip neutrinos
+                if (abs(p.id())==12 || abs(p.id())==14 || abs(p.id())==16) continue;
+                
+                // Grab features
+                id = p.id();
                 pT = p.pT();
                 eta = p.eta();
                 phi = p.phi();
-                e = p.e();
                 q = p.charge();
                 xProd = p.xProd();
                 yProd = p.yProd();
@@ -230,67 +226,27 @@ int main(int argc, char *argv[])
                 yDec = p.yDec();
                 zDec = p.zDec();
                 tDec = p.tDec();
-
-                label = i_pu; // PU Process
-
                 double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
 
-                if (not p.isFinal()) continue;
+                // Grab label
+                label = i_pu; // PU Process
 
-                ID++;
+                // Append features and labels to vector
+                trk_pT.push_back(pT);
+                trk_eta.push_back(eta);
+                trk_phi.push_back(phi);
+                trk_q.push_back(q);
+                trk_d0.push_back(d0);
+                trk_z0.push_back(z0);
+                trk_pid.push_back(id);
+                trk_label.push_back(label);
 
-                event_trk_pT.push_back(pT);
-                event_trk_eta.push_back(eta);
-                event_trk_phi.push_back(phi);
-                event_trk_e.push_back(e);
-                event_trk_q.push_back(q);
-                event_trk_d0.push_back(d0);
-                event_trk_z0.push_back(z0);
-                event_trk_pid.push_back(id);
-                event_trk_label.push_back(label);
-
-                // A.X.: skip neutrinos
-                if (abs(id)==12 || abs(id)==14 || abs(id)==16) continue;
-                        fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
-                        fj.set_user_index(ID);
-                        stbl_ptcls.push_back(fj);
-                        ptcls_pu.push_back(p);
+                // Store particles for jet clustering
+                fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
+                fj.set_user_index(ID++);
+                stbl_ptcls.push_back(fj);
             }
         }
-
-        // prepare for filling
-        jet_pt.clear();
-        jet_eta.clear();
-        jet_phi.clear();
-        jet_m.clear();
-
-        trk_jet_pT.clear();
-        trk_jet_eta.clear();
-        trk_jet_phi.clear();
-        trk_jet_e.clear();
-        trk_jet_q.clear();
-        trk_jet_d0.clear();
-        trk_jet_z0.clear();
-        trk_jet_pid.clear();
-        trk_jet_label.clear();
-        trk_jet_origin.clear();
-        trk_jet_bcflag.clear();
-
-        trk_pT.clear();
-        trk_eta.clear();
-        trk_phi.clear();
-        trk_e.clear();
-        trk_q.clear();
-        trk_d0.clear();
-        trk_z0.clear();
-        trk_pid.clear();
-        trk_label.clear();
-        trk_origin.clear();
-        trk_bcflag.clear();
-
-        jet_ntracks.clear();
-        jet_track_index.clear();
-        int track_index = 0;
 
         // Cluster stable particles using anti-kt
         for (auto jetDef:jetDefs) {
@@ -303,58 +259,14 @@ int main(int argc, char *argv[])
                 jet_phi.push_back(jet.phi());
                 jet_m.push_back(jet.m());
 
-                std::vector<float> trk_pT_tmp, trk_eta_tmp, trk_phi_tmp, trk_e_tmp;
-                std::vector<float> trk_q_tmp, trk_d0_tmp, trk_z0_tmp;
-                std::vector<int> trk_pid_tmp, trk_label_tmp, trk_origin_tmp, trk_bcflag_tmp;
+                std::vector<int> jet_trk_association_tmp;
 
                 // For each particle:
-                jet_track_index.push_back(track_index);
-                int ntracks = 0;
                 for (auto trk:jet.constituents()) {
-                    int ix = trk.user_index()-1;
-
-                    trk_pT.push_back(event_trk_pT[ix]);
-                    trk_eta.push_back(event_trk_eta[ix]);
-                    trk_phi.push_back(event_trk_phi[ix]);
-                    trk_e.push_back(event_trk_e[ix]);
-                    trk_q.push_back(event_trk_q[ix]);
-                    trk_d0.push_back(event_trk_d0[ix]);
-                    trk_z0.push_back(event_trk_z0[ix]);
-                    trk_pid.push_back(event_trk_pid[ix]);
-                    trk_label.push_back(event_trk_label[ix]);
-                    int bcflag = 0;
-                    int origin = event_trk_label[ix]<0 ? trace_origin_higgs(pythia.event,ix,bcflag):-999;
-                    trk_origin.push_back(origin);
-                    trk_bcflag.push_back(bcflag);
-                    ++ntracks;
-
-                    // L.V. store trks as vector<vector<>>
-                    trk_pT_tmp.push_back(event_trk_pT[ix]);
-                    trk_eta_tmp.push_back(event_trk_eta[ix]);
-                    trk_phi_tmp.push_back(event_trk_phi[ix]);
-                    trk_e_tmp.push_back(event_trk_e[ix]);
-                    trk_q_tmp.push_back(event_trk_q[ix]);
-                    trk_d0_tmp.push_back(event_trk_d0[ix]);
-                    trk_z0_tmp.push_back(event_trk_z0[ix]);
-                    trk_pid_tmp.push_back(event_trk_pid[ix]);
-                    trk_label_tmp.push_back(event_trk_label[ix]);
-                    trk_origin_tmp.push_back(origin);
-                    trk_bcflag_tmp.push_back(bcflag);
+                    jet_trk_association_tmp.push_back(trk.user_index());
                 }
-                jet_ntracks.push_back(ntracks);
-                track_index += ntracks;
                 
-                trk_jet_pT.push_back(trk_pT_tmp);
-                trk_jet_eta.push_back(trk_eta_tmp);
-                trk_jet_phi.push_back(trk_phi_tmp);
-                trk_jet_e.push_back(trk_e_tmp);
-                trk_jet_q.push_back(trk_q_tmp);
-                trk_jet_d0.push_back(trk_d0_tmp);
-                trk_jet_z0.push_back(trk_z0_tmp);
-                trk_jet_pid.push_back(trk_pid_tmp);
-                trk_jet_label.push_back(trk_label_tmp);
-                trk_jet_origin.push_back(trk_origin_tmp);
-                trk_jet_bcflag.push_back(trk_bcflag_tmp);
+                jet_trk_association.push_back(jet_trk_association_tmp);
             }
         }
         FastJet->Fill();
