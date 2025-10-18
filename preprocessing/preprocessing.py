@@ -101,9 +101,11 @@ for event in range(len(selected_tracks_FINAL)):
     for jet in range(len(jet_trk_association_FINAL[event])):
         jet_constituent_idxs = [trk_idx_dict[int(trk_ID)] for trk_ID in jet_trk_association_FINAL[event,jet]]
 
+selected_tracks_rm_ID = selected_tracks_FINAL[:,:,[0,1,2,3,4,5,7]]
+
 print("Dump to pickle file...")
 
-data_dict ={"jets": selected_jets_FINAL, "jet_trk_idx": jet_constituent_idxs, "trks": selected_tracks_FINAL}
+data_dict ={"jets": selected_jets_FINAL, "jet_trk_idx": jet_constituent_idxs, "trks": selected_tracks_rm_ID}
 
 with open(out_sample, "wb") as f:
     pickle.dump(data_dict, f)
