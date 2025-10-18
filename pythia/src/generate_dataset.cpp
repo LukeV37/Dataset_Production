@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     FastJet->Branch("jet_trk_association", &jet_trk_association);
 
     std::vector<float> trk_pT, trk_eta, trk_phi, trk_q, trk_d0, trk_z0;
-    std::vector<int> trk_pid, trk_label;
+    std::vector<int> trk_pid, trk_label, trk_ID;
     FastJet->Branch("trk_pT", &trk_pT);
     FastJet->Branch("trk_eta", &trk_eta);
     FastJet->Branch("trk_phi", &trk_phi);
@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
     FastJet->Branch("trk_z0", &trk_z0);
     FastJet->Branch("trk_pid", &trk_pid);
     FastJet->Branch("trk_label", &trk_label);
+    FastJet->Branch("trk_ID", &trk_ID);
 
     // Configure HS Process
     Pythia8::Pythia pythia;
@@ -146,6 +147,7 @@ int main(int argc, char *argv[])
         trk_z0.clear();
         trk_pid.clear();
         trk_label.clear();
+        trk_ID.clear();
 
         jet_trk_association.clear();
 
@@ -189,6 +191,7 @@ int main(int argc, char *argv[])
             trk_z0.push_back(z0);
             trk_pid.push_back(id);
             trk_label.push_back(label);
+            trk_ID.push_back(ID);
 
             // Store particles for jet clustering
             fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
@@ -240,6 +243,7 @@ int main(int argc, char *argv[])
                 trk_z0.push_back(z0);
                 trk_pid.push_back(id);
                 trk_label.push_back(label);
+                trk_ID.push_back(ID);
 
                 // Store particles for jet clustering
                 fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
