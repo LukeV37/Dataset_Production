@@ -89,9 +89,23 @@ trackless_jets_mask = (ak.num(jet_trk_association_TRK_CUTS, axis=2)!=0)
 selected_jets_FINAL = selected_jets[trackless_jets_mask]
 jet_trk_association_FINAL = jet_trk_association_TRK_CUTS[trackless_jets_mask]
 
+print("Convert IDs to idxs...")
+for event in range(len(selected_tracks_FINAL)):
+    # ID is unique but unordered; Lets create map from ID to index!
+    trk_idx_dict = {}
+    trk_IDs = selected_tracks_FINAL[event,:,-2]
+    for i, ID in enumerate(trk_IDs):
+        trk_idx_dict[ID]=i
+
+    # Get index of tracks that belong to each jet
+    for jet in range(len(jet_trk_association_FINAL[event])):
+        jet_constituent_idxs = [trk_idx_dict[int(trk_ID)] for trk_ID in jet_trk_association_FINAL[event,jet]]
+
+selected_tracks_rm_ID = selected_tracks_FINAL[:,:,[0,1,2,3,4,5,7]]
+
 print("Dump to pickle file...")
 
-data_dict ={"jets": selected_jets_FINAL, "jet_trk_IDs": jet_trk_association_FINAL, "trks": selected_tracks_FINAL}
+data_dict ={"jets": selected_jets_FINAL, "jet_trk_idx": jet_constituent_idxs, "trks": selected_tracks_rm_ID}
 
 with open(out_sample, "wb") as f:
     pickle.dump(data_dict, f)
