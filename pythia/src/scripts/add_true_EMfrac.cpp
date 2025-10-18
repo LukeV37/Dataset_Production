@@ -77,7 +77,6 @@ int main(int argc, char *argv[])
       }
       double true_Efrac = vtot.E(); if (true_Efrac>0) true_Efrac = vhs.E()/true_Efrac;
       double true_Mfrac = vtot.M(); if (true_Mfrac>0) true_Mfrac = vhs.M()/true_Mfrac;
-      cout << true_Efrac << true_Mfrac << endl;
       jet_true_Efrac[ijet] = true_Efrac;
       jet_true_Mfrac[ijet] = true_Mfrac;
     }
