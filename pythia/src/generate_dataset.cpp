@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     FastJet->Branch("jet_trk_association", &jet_trk_association);
 
     std::vector<float> trk_pT, trk_eta, trk_phi, trk_q, trk_d0, trk_z0;
-    std::vector<int> trk_pid, trk_label, trk_ID;
+    std::vector<int> trk_pid, trk_label, trk_ID, trk_origin, trk_bcflag;
     FastJet->Branch("trk_pT", &trk_pT);
     FastJet->Branch("trk_eta", &trk_eta);
     FastJet->Branch("trk_phi", &trk_phi);
@@ -76,6 +76,8 @@ int main(int argc, char *argv[])
     FastJet->Branch("trk_pid", &trk_pid);
     FastJet->Branch("trk_label", &trk_label);
     FastJet->Branch("trk_ID", &trk_ID);
+    FastJet->Branch("trk_origin", &trk_origin);
+    FastJet->Branch("trk_bcflag", &trk_bcflag);
 
     // Configure HS Process
     Pythia8::Pythia pythia;
@@ -148,6 +150,8 @@ int main(int argc, char *argv[])
         trk_pid.clear();
         trk_label.clear();
         trk_ID.clear();
+        trk_origin.clear();
+        trk_bcflag.clear();
 
         jet_trk_association.clear();
 
@@ -155,6 +159,7 @@ int main(int argc, char *argv[])
         std::vector<fastjet::PseudoJet> stbl_ptcls;
 
         // Add in hard scatter particles!
+        auto &event = pythia.event;
         for(int j=0;j<pythia.event.size();j++){
             auto &p = pythia.event[j];
 
@@ -178,6 +183,8 @@ int main(int argc, char *argv[])
             zDec = p.zDec();
             tDec = p.tDec();
             double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
+            int bcflag = 0;
+            int origin = trace_origin_top(event,ID,bcflag);
 
             // Grab label
             label = -1; // HS Process
@@ -192,6 +199,8 @@ int main(int argc, char *argv[])
             trk_pid.push_back(id);
             trk_label.push_back(label);
             trk_ID.push_back(ID);
+            trk_bcflag.push_back(bcflag);
+            trk_origin.push_back(origin);
 
             // Store particles for jet clustering
             fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
@@ -244,6 +253,9 @@ int main(int argc, char *argv[])
                 trk_pid.push_back(id);
                 trk_label.push_back(label);
                 trk_ID.push_back(ID);
+                trk_origin.push_back(-999);
+                trk_bcflag.push_back(-999);
+
 
                 // Store particles for jet clustering
                 fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
