@@ -13,8 +13,7 @@
 #include "fastjet/ClusterSequence.hh"
 
 #include "include/estimate_ip.h"
-#include "include/trace_origin_top.h"
-#include "include/trace_origin_higgs.h"
+#include "include/traverse_history.h"
 
 // Main pythia loop
 int main(int argc, char *argv[])
@@ -66,7 +65,7 @@ int main(int argc, char *argv[])
     FastJet->Branch("jet_trk_association", &jet_trk_association);
 
     std::vector<float> trk_pT, trk_eta, trk_phi, trk_q, trk_d0, trk_z0;
-    std::vector<int> trk_pid, trk_label, trk_ID, trk_origin, trk_bcflag;
+    std::vector<int> trk_pid, trk_label, trk_ID, trk_fromBottom, trk_fromW, trk_fromUp, trk_fromDown;
     FastJet->Branch("trk_pT", &trk_pT);
     FastJet->Branch("trk_eta", &trk_eta);
     FastJet->Branch("trk_phi", &trk_phi);
@@ -76,8 +75,8 @@ int main(int argc, char *argv[])
     FastJet->Branch("trk_pid", &trk_pid);
     FastJet->Branch("trk_label", &trk_label);
     FastJet->Branch("trk_ID", &trk_ID);
-    FastJet->Branch("trk_origin", &trk_origin);
-    FastJet->Branch("trk_bcflag", &trk_bcflag);
+    FastJet->Branch("trk_fromBottom", &trk_fromBottom);
+    FastJet->Branch("trk_fromW", &trk_fromW);
 
     // Configure HS Process
     Pythia8::Pythia pythia;
@@ -150,10 +149,24 @@ int main(int argc, char *argv[])
         trk_pid.clear();
         trk_label.clear();
         trk_ID.clear();
-        trk_origin.clear();
-        trk_bcflag.clear();
+        trk_fromBottom.clear();
+        trk_fromW.clear();
+        trk_fromUp.clear();
+        trk_fromDown.clear();
 
         jet_trk_association.clear();
+
+        // Use depth-first-search to find daughters
+        std::vector<int> fromDown;
+        std::vector<int> fromUp;
+        std::vector<int> fromBottom;
+        int top_idx = find_top_from_event(pythia.event, 6);
+        int down_idx = find_down_from_top(pythia.event, top_idx);
+        int up_idx = find_up_from_top(pythia.event, top_idx);
+        int bottom_idx = find_b_from_top(pythia.event, top_idx);
+        fromDown = find_daughters(pythia.event, down_idx);
+        fromUp = find_daughters(pythia.event, up_idx);
+        fromBottom = find_daughters(pythia.event, bottom_idx);
 
         int entries = pythia.event.size();
         std::vector<fastjet::PseudoJet> stbl_ptcls;
@@ -183,8 +196,6 @@ int main(int argc, char *argv[])
             zDec = p.zDec();
             tDec = p.tDec();
             double d0,z0; find_ip(pT,eta,phi,xProd,yProd,zProd,d0,z0);
-            int bcflag = 0;
-            int origin = trace_origin_top(event,ID,bcflag);
 
             // Grab label
             label = -1; // HS Process
@@ -199,8 +210,10 @@ int main(int argc, char *argv[])
             trk_pid.push_back(id);
             trk_label.push_back(label);
             trk_ID.push_back(ID);
-            trk_bcflag.push_back(bcflag);
-            trk_origin.push_back(origin);
+            trk_fromBottom.push_back(fromBottom[j]);
+            int fromW=0;
+            if ((fromUp[j]==1)||(fromDown[j]==1)){fromW=1;}
+            trk_fromW.push_back(fromW);
 
             // Store particles for jet clustering
             fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
@@ -253,9 +266,8 @@ int main(int argc, char *argv[])
                 trk_pid.push_back(id);
                 trk_label.push_back(label);
                 trk_ID.push_back(ID);
-                trk_origin.push_back(-999);
-                trk_bcflag.push_back(-999);
-
+                trk_fromBottom.push_back(0);
+                trk_fromW.push_back(0);
 
                 // Store particles for jet clustering
                 fastjet::PseudoJet fj(p.px(), p.py(), p.pz(), p.e());
