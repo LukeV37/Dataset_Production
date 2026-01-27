@@ -29,6 +29,8 @@ with uproot.open(in_sample+":fastjet") as f:
     trk_z0 = f["trk_z0"].array()
     trk_label = f["trk_label"].array()
     trk_ID = f["trk_ID"].array()
+    trk_fromBottom= f["trk_fromBottom"].array()
+    trk_fromW = f["trk_fromW"].array()
 
     # List of trk_IDs per jet
     jet_trk_association = f["jet_trk_association"].array()
@@ -42,7 +44,7 @@ print("\tNum Tracks in first event: ", len(jet_feats[0]))
 print("\tNum Track Features: ", len(jet_feats[0][0]))
 
 print("Joining track features...")
-trk_feat_list = [trk_pt,trk_eta,trk_phi,trk_q,trk_d0,trk_z0,trk_ID,trk_label]
+trk_feat_list = [trk_pt,trk_eta,trk_phi,trk_q,trk_d0,trk_z0,trk_fromBottom,trk_fromW,trk_ID,trk_label]
 trk_feat_list = [x[:,:,np.newaxis] for x in trk_feat_list]
 trk_feats = ak.concatenate(trk_feat_list, axis=2)
 print("\tNum Events: ", len(trk_feats))
