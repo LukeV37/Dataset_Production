@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
     // Configure HS Process
     Pythia8::Pythia pythia;
 
+/*
     // Initialize Les Houches Event File run. List initialization information.
     pythia.readString("Beams:frameType = 4");
     pythia.readString(std::string("Beams:LHEF = ")+inputFile);
@@ -89,6 +90,39 @@ int main(int argc, char *argv[])
     // Force H->bb decay
     pythia.readString("25:onMode = off");
     pythia.readString("25:onIfAny = 5");
+*/
+
+    // Beam setup (LHC 13 TeV)
+    pythia.readString("Beams:idA = 2212");
+    pythia.readString("Beams:idB = 2212");
+    pythia.readString("Beams:eCM = 13000.");
+
+    pythia.readString("Main:numberOfEvents = 1000");
+    pythia.readString("Next:numberCount = 100");
+    pythia.readString("Random:setSeed = on");
+    pythia.readString("Random:seed = -1");
+
+    // Hard process: pp → tt̄
+    pythia.readString("Top:gg2ttbar = on");
+    pythia.readString("Top:qqbar2ttbar = on");
+
+    // Force t → b W+
+    pythia.readString("6:onMode = off");
+    pythia.readString("6:onIfMatch = 5 24");
+
+    // Force t~ → b~ W-
+    pythia.readString("-6:onMode = off");
+    pythia.readString("-6:onIfMatch = -5 -24");
+
+    // Force W+ → u d~ OR c s~ (hadronic)
+    pythia.readString("24:onMode = off");
+    pythia.readString("24:onIfMatch = 2 -1");   // W+ → u d~
+    pythia.readString("24:onIfMatch = 4 -3");   // W+ → c s~
+
+    // Force W- → u~ d OR c~ s (hadronic)
+    pythia.readString("-24:onMode = off");
+    pythia.readString("-24:onIfMatch = -2 1");  // W- → u~ d
+    pythia.readString("-24:onIfMatch = -4 3");  // W- → c~ s
 
     // Set Vertex Spreading
     pythia.readString("Beams:allowVertexSpread = on");
@@ -116,10 +150,12 @@ int main(int argc, char *argv[])
     jetDefs["Anti-#it{k_{t}} jets, #it{R} = 0.4"] = fastjet::JetDefinition(fastjet::antikt_algorithm, 0.4, fastjet::E_scheme, fastjet::Best);
 
     // Allow for possibility of a few faulty events.
+    int nEvents = pythia.mode("Main:numberOfEvents");
     int nAbort = 10;
     int iAbort = 0;
 
     // Begin Event Loop; generate until none left in input file
+    /*
     while (iAbort < nAbort) {
 
         // Generate events, and check whether generation failed.
@@ -128,6 +164,13 @@ int main(int argc, char *argv[])
           if (pythia.info.atEndOfFile()) break;
           ++iAbort;
           continue;
+        }
+    */
+    for (int iEvent = 0; iEvent < nEvents; iEvent++) {
+        if (!pythia.next()) {
+            if (++iAbort < nAbort) continue;
+            std::cout << "Error: too many failed events, aborting." << std::endl;
+            break;
         }
 
         // Track ID starts at zero for each event
